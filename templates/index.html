@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Air Quality Index Prediction</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+    <main class="panel">
+
+        <h1>Air quality index</h1>
+        <p class="intro">Enter today's pollutant readings to predict the AQI.</p>
+
+        <div class="layout">
+
+            <!-- Left: form -->
+            <form action="/predict" method="POST">
+
+                <div class="field">
+                    <label for="so2">Sulphur dioxide (SO₂)</label>
+                    <div class="input-wrap">
+                        <input type="number" id="so2" name="so2" step="any" min="0"
+                               placeholder="e.g. 12.5" inputmode="decimal" required>
+                        <span class="unit">µg/m³</span>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="no2">Nitrogen dioxide (NO₂)</label>
+                    <div class="input-wrap">
+                        <input type="number" id="no2" name="no2" step="any" min="0"
+                               placeholder="e.g. 28" inputmode="decimal" required>
+                        <span class="unit">µg/m³</span>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="rspm">Particulate matter <span class="hint">(RSPM / PM10)</span></label>
+                    <div class="input-wrap">
+                        <input type="number" id="rspm" name="rspm" step="any" min="0"
+                               placeholder="e.g. 95" inputmode="decimal" required>
+                        <span class="unit">µg/m³</span>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit">Predict AQI</button>
+
+            </form>
+
+            <!-- Right: result -->
+            <section class="result" id="result" aria-live="polite"
+                     {% if prediction %}data-aqi="{{ prediction }}"{% endif %}>
+
+                {% if prediction %}
+
+                <p class="label">Predicted AQI</p>
+                <p class="value">{{ prediction }}</p>
+                <p class="category" id="category"></p>
+
+                <div class="scale" id="scale" hidden>
+                    <div class="scale-bar">
+                        <span></span><span></span><span></span><span></span><span></span><span></span>
+                    </div>
+                    <div class="scale-marker" id="marker"></div>
+                    <div class="scale-ends"><span>0</span><span>500</span></div>
+                </div>
+
+                {% else %}
+
+                <p class="empty">Fill in the three readings and select Predict AQI. Your result will appear here.</p>
+
+                {% endif %}
+
+            </section>
+
+        </div>
+
+    </main>
+
+    {% if prediction %}
+    <script>
+        (function () {
+            var result = document.getElementById("result");
+            var aqi = parseFloat(result.dataset.aqi);
+            if (isNaN(aqi)) return;
+
+            var bands = [
+                { max: 50,       name: "Good",         tone: "--aqi-good" },
+                { max: 100,      name: "Satisfactory", tone: "--aqi-satisfactory" },
+                { max: 200,      name: "Moderate",     tone: "--aqi-moderate" },
+                { max: 300,      name: "Poor",         tone: "--aqi-poor" },
+                { max: 400,      name: "Very poor",    tone: "--aqi-very-poor" },
+                { max: Infinity, name: "Severe",       tone: "--aqi-severe" }
+            ];
+
+            var band = bands.find(function (b) { return aqi <= b.max; });
+            var category = document.getElementById("category");
+            category.textContent = band.name;
+            category.style.setProperty("--tone", "var(" + band.tone + ")");
+
+            var scale = document.getElementById("scale");
+            var marker = document.getElementById("marker");
+            scale.hidden = false;
+            requestAnimationFrame(function () {
+                marker.style.left = Math.min(Math.max(aqi, 0), 500) / 500 * 100 + "%";
+            });
+        })();
+    </script>
+    {% endif %}
+
+</body>
+
+</html>
